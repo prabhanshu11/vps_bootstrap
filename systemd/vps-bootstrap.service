@@ -1,0 +1,18 @@
+[Unit]
+Description=VPS Bootstrap Service
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/root/vps_bootstrap/scripts/bootstrap.sh
+RemainAfterExit=yes
+StandardOutput=journal
+StandardError=journal
+
+# Restart policy
+Restart=on-failure
+RestartSec=10s
+
+[Install]
+WantedBy=multi-user.target

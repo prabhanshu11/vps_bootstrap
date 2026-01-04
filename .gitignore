@@ -1,0 +1,22 @@
+# Logs
+*.log
+
+# Temp files
+*.tmp
+*.swp
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# Secrets (should never have any, but just in case)
+*.pem
+*.key
+secrets/
+.env
