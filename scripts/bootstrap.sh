@@ -5,7 +5,7 @@ set -e
 # Ensures nginx, SSL, and Docker containers are properly configured
 # This script is idempotent - safe to run multiple times
 
-WEBSITE_REPO_PATH="/root/personal-website"
+WEBSITE_REPO_PATH="/var/www/prabhanshu.space"
 NGINX_CONF_SOURCE="${WEBSITE_REPO_PATH}/deploy/nginx/personal-website.conf"
 NGINX_CONF_DEST="/etc/nginx/sites-available/prabhanshu.space"
 NGINX_SYMLINK="/etc/nginx/sites-enabled/prabhanshu.space"
