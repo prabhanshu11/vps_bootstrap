@@ -69,7 +69,12 @@ fi
 log "Testing nginx configuration..."
 nginx -t || error "nginx configuration test failed"
 
-# 6. Check if SSL certificate exists
+# 6. Check if SSL is configured in nginx
+SSL_CONFIGURED=false
+if grep -q "listen 443" "$NGINX_CONF_DEST"; then
+    SSL_CONFIGURED=true
+fi
+
 if [[ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
     log "SSL certificate not found. Running certbot..."
 
@@ -80,8 +85,18 @@ if [[ ! -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]]; then
     certbot --nginx -d "$DOMAIN" -d "$WWW_DOMAIN" --non-interactive --agree-tos --email mail.prabhanshu@gmail.com || error "certbot failed"
 
     log "SSL certificate obtained successfully"
+elif [[ "$SSL_CONFIGURED" == "false" ]]; then
+    log "SSL certificate exists but nginx config needs SSL blocks. Running certbot to configure nginx..."
+
+    # Reload nginx first to apply any config changes
+    systemctl reload nginx
+
+    # Run certbot with --reinstall to add SSL configuration to nginx
+    certbot --nginx -d "$DOMAIN" -d "$WWW_DOMAIN" --non-interactive --agree-tos --email mail.prabhanshu@gmail.com --reinstall || error "certbot failed to configure nginx"
+
+    log "SSL configured in nginx successfully"
 else
-    log "SSL certificate already exists"
+    log "SSL certificate and nginx configuration already exist"
 
     # Just reload nginx to apply any config changes
     log "Reloading nginx..."
