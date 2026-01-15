@@ -1,8 +1,15 @@
 # VPS Bootstrap System
 
-**Purpose**: Automated server infrastructure management for prabhanshu.space
+**Purpose**: Automated server infrastructure management for the multi-site VPS
 
-This repository manages the bootstrap process for the VPS, ensuring nginx, SSL certificates, and Docker containers are properly configured. It provides NASA-style redundancy - the system can recover from failures automatically.
+This repository manages the bootstrap process for the VPS (72.60.218.33), ensuring nginx, SSL certificates, and Docker containers are properly configured for **all hosted sites**. It provides NASA-style redundancy - the system can recover from failures automatically.
+
+## Hosted Sites
+
+| Site | Domain | Repository | Status |
+|------|--------|------------|--------|
+| Personal Website | prabhanshu.space | personal-website | Production |
+| Avanti Terraform | avantiterraform.com | avantiterraform | Production |
 
 ## Architecture
 
@@ -39,17 +46,73 @@ The bootstrap system:
 ### Why?
 Manual changes create "state drift" - the VPS state differs from what's in git. This makes deployments unpredictable and debugging impossible.
 
-## Relationship with personal-website
+## Multi-Site Architecture
 
-This repo depends on `personal-website` for:
-- nginx config: `personal-website/deploy/nginx/personal-website.conf`
-- Docker containers: `personal-website/docker-compose.yml` and `personal-website/dashboard/docker-compose.yml`
+### Site Deployments
+Both sites deploy independently via their own GitHub Actions workflows:
 
-The bootstrap script expects `personal-website` to be deployed at `/root/personal-website` on the VPS.
+| Site | VPS Path | nginx Config | Ports |
+|------|----------|--------------|-------|
+| personal-website | `/var/www/personal-website` | `prabhanshu.space.conf` | 5000, 3000, 8000 |
+| avantiterraform | `/var/www/avantiterraform` | `avantiterraform.conf` | 3001, 8001 |
+
+### Unified Deploy Key
+All repos use the SAME SSH deploy key for VPS access:
+- **Fingerprint**: `SHA256:0/FaydVfteN4xqu70OdgGli3R54JiLvFECM4SIn4/Kg`
+- **Setup script**: `scripts/setup-deploy-keys.sh`
+- **Key storage**: `pass show github/vps-deploy-key` (on local machine)
+
+To add a new repo for VPS deployment:
+```bash
+# Get the key from pass manager
+pass show github/vps-deploy-key | gh secret set SSH_PRIVATE_KEY --repo owner/repo
+
+# Or use the setup script
+./scripts/setup-deploy-keys.sh add
+```
+
+### Multi-Site SSL Warning (CRITICAL)
+
+**The Avantiterraform Incident (Jan 2026)**:
+When avantiterraform.com lost its SSL config, nginx with only one SSL-enabled server block served prabhanshu.space content for ALL HTTPS requests to avantiterraform.com.
+
+**Root Cause**: Deployment scripts were overwriting certbot's SSL additions without re-running certbot.
+
+**Solution**: Always use `certbot --reinstall` after copying nginx configs:
+```bash
+# In deployment scripts
+if [ -f /etc/letsencrypt/live/DOMAIN/fullchain.pem ]; then
+    certbot --nginx -d DOMAIN --reinstall --redirect --non-interactive
+fi
+```
+
+**Diagnostic Commands**:
+```bash
+# Check which sites have SSL
+grep -r "listen 443" /etc/nginx/sites-enabled/
+
+# List all certificates
+certbot certificates
+
+# Test specific domain
+openssl s_client -servername avantiterraform.com -connect avantiterraform.com:443 | openssl x509 -noout -subject
+```
+
+## Relationship with Other Repos
+
+### personal-website
+- nginx config: `personal-website/deploy/nginx/`
+- Docker containers: Main site + dashboard
+- Path on VPS: `/var/www/personal-website`
+
+### avantiterraform
+- nginx config: `avantiterraform/deploy/nginx/`
+- Docker containers: V1 Next.js + API
+- Path on VPS: `/var/www/avantiterraform`
 
 **Deployment Order**:
-1. `personal-website` deploys first (website code, configs, containers)
-2. `vps_bootstrap` runs after (ensures nginx + SSL + containers are up)
+1. Site repos deploy independently (website code, configs, containers)
+2. `vps_bootstrap` can run after to ensure nginx + SSL + containers are up
 
 ## Manual Deployment (Emergency Only)
 
@@ -105,6 +168,13 @@ The bootstrap script will automatically run certbot if certificates don't exist.
 - Check DNS: `dig prabhanshu.space`
 - Check port 80: `netstat -tlnp | grep :80`
 - Check certbot logs: `/var/log/letsencrypt/letsencrypt.log`
+
+### One site showing another site's content
+This is the "multi-site SSL" issue. If https://siteA.com shows siteB.com content:
+1. Check SSL status: `grep -r "listen 443" /etc/nginx/sites-enabled/`
+2. One site likely lost its SSL config
+3. Fix: Redeploy the affected site (will run certbot --reinstall)
+4. Verify: `curl -I https://siteA.com` should show correct certificate
 
 ### Bootstrap script failed
 1. Check the logs: `journalctl -u vps-bootstrap.service -n 100`
