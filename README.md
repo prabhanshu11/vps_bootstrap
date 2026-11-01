@@ -150,7 +150,6 @@ systemctl start vps-bootstrap.service
 This repo is designed to grow with additional infrastructure needs:
 - AI agents (future phase)
 - VPN configuration
-- Reverse proxies for streaming (sunshine + moonlight)
 - Additional monitoring/health checks
 - Backup automation
 
@@ -207,3 +206,16 @@ git push
 - GitHub: prabhanshu11
 - Email: mail.prabhanshu@gmail.com
 - VPS: 72.60.218.33 (srv1065721.hstgr.cloud)
+
+## wg-vdi relay (WireGuard hub, 2026-11-01)
+
+Self-hosted WireGuard hub so the laptop's Moonlight reaches the desktop's Sunshine from anywhere
+(no third-party coordination server; Tailscale stays as the separate fallback on the peers).
+
+- `10.77.0.0/24`: VPS `.1` (UDP 51820), desktop `.2`, laptop `.3`. The VPS only forwards wg-vdi to wg-vdi.
+- `scripts/setup-wireguard.sh` (idempotent) is run by `.github/workflows/wireguard.yml` on pushes touching
+  `wireguard/**` or by dispatch; `deploy.yml` ignores those paths. Private key: Actions secret `WG_VDI_VPS_KEY`
+  (copy in pass `vps/wireguard-vdi-private`); public key `wireguard/vps.pub`.
+- Add a peer: run `local-bootstrapping/scripts/vdi/setup-wg-vdi.sh` on it, append its `PEER:` line to
+  `wireguard/peers.conf`, push.
+- Full VDI doc: local-bootstrapping `docs/vdi.md`.
