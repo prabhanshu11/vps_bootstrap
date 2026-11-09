@@ -3,7 +3,7 @@
 # Moonlight reaches the desktop's Sunshine from anywhere (no third-party coordination
 # server; Tailscale stays as the separate fallback on the peers).
 #
-#   10.77.0.0/24   VPS .1 (this host, UDP 51820), desktop .2, laptop .3
+#   10.77.0.0/24   VPS .1 (this host, UDP 51820), desktop .2, laptop .3, Pi 5 NAS .4
 #
 # Run by .github/workflows/wireguard.yml with the private key on stdin (secret
 # WG_VDI_VPS_KEY). Idempotent. Only peers in wireguard/peers.conf can join; Sunshine is

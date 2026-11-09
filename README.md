@@ -212,7 +212,7 @@ git push
 Self-hosted WireGuard hub so the laptop's Moonlight reaches the desktop's Sunshine from anywhere
 (no third-party coordination server; Tailscale stays as the separate fallback on the peers).
 
-- `10.77.0.0/24`: VPS `.1` (UDP 51820), desktop `.2`, laptop `.3`. The VPS only forwards wg-vdi to wg-vdi.
+- `10.77.0.0/24`: VPS `.1` (UDP 51820), desktop `.2`, laptop `.3`, Pi 5 NAS `.4` (2026-11-09). The VPS only forwards wg-vdi to wg-vdi.
 - `scripts/setup-wireguard.sh` (idempotent) is run by `.github/workflows/wireguard.yml` on pushes touching
   `wireguard/**` or by dispatch; `deploy.yml` ignores those paths. Private key: Actions secret `WG_VDI_VPS_KEY`
   (copy in pass `vps/wireguard-vdi-private`); public key `wireguard/vps.pub`.
